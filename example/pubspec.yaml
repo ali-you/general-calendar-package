@@ -1,0 +1,17 @@
+name: general_calendar_example
+description: Delegate-based calendars and application-owned date attributes.
+publish_to: none
+version: 1.0.0
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.32.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  general_calendar:
+    path: ..
+  general_datetime: ^4.0.0
+dev_dependencies:
+  flutter_lints: ^5.0.0
+flutter:
+  uses-material-design: true
