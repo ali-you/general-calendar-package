@@ -7,8 +7,11 @@ matching delegate and dates for Persian, Hijri, Hebrew, or your own calendar.
 ## Implemented
 
 - Inline month and week grids, plus a year overview that opens a chosen month.
+- Ten design-system-inspired presets, plus booking-range and event-grid layouts.
 - Single-date, multiple-date, and inclusive date-range selection.
 - Single-date and range dialogs with confirmation and cancellation.
+- Time-only and combined date-time input, with numeric, dial, wheel, dropdown,
+  and appointment-slot views, shared validation, and confirmation dialogs.
 - Disabled dates, holidays, vacations, colored tags, tooltips, and custom metadata.
 - Custom day builders and Material theme overrides.
 - Locale-based week starts, configurable weekends, RTL layout, and day semantics.
@@ -18,6 +21,14 @@ matching delegate and dates for Persian, Hijri, Hebrew, or your own calendar.
 
 Requires Flutter 3.32+ and Dart 3.4+. The runtime depends only on Flutter.
 The chronology package is a development dependency for integration tests.
+
+Choose a visual style with `design: GeneralCalendarDesign.shadcn` (or `material`,
+`cupertino`, `fluent`, `carbon`, `antDesign`, `atlassian`, `spectrum`, `primer`,
+`polaris`, `booking`, `eventGrid`). All use the same delegates and date rules.
+See the [design catalog, sources, screenshots, and customization guide](docs/calendar-designs.md).
+The example includes a style selector, dark mode, and a comparison gallery.
+See the [time and date-time picker guide](docs/time-pickers.md) for the new APIs,
+availability rules, calendar-safe results, and screenshots.
 
 ## Inline calendar
 
@@ -184,8 +195,9 @@ GeneralCalendarTheme(
 )
 ```
 
-A widget-level `theme` overrides the inherited theme. Unspecified colors follow
-the Material color scheme. Disabled and selected foreground colors take priority
+A widget-level `theme` layers over the inherited theme and the selected design.
+Only explicitly supplied values override earlier layers.
+Disabled and selected foreground colors take priority
 over per-date foreground colors. Selection fill takes priority over per-date
 backgrounds. Tag labels appear in semantics/tooltips; up to three colored dots
 appear in the default cell. `semanticLabel` adds application-specific context.
@@ -238,10 +250,20 @@ chronology versions are prepared in source; hosted resolution is not certified.
 flutter pub get
 flutter analyze
 flutter test
-dart format --output=none --set-exit-if-changed lib test example/lib
+dart format --output=none --set-exit-if-changed lib test example/lib example/test
+cd example
+flutter test
 ```
 
-The example source in `example/lib/main.dart` demonstrates four calendars, all
-selection modes, date attributes, and a dialog. To run it, generate the desired
-platform runner in `example` with `flutter create --platforms=windows .` (or your
-target platform), then `flutter run`. Platform runner files are not included.
+The [comprehensive example](example/README.md) includes four calendars, all
+selection modes and views, configurable date rules, custom day cells, all style
+presets, four picker dialogs, five time inputs, and an inline appointment form.
+It includes a web runner: run `flutter pub get` and `flutter run -d chrome` from
+`example`. See its README for native runner setup, local dependency overrides,
+and a guided walkthrough.
+
+Local verification: package tests (86), example tests (16), analysis, formatting,
+and the example release web build passed.
+The tests cover calendar switching, Hebrew leap months, finite Hijri bounds,
+disabled-date rules, range selection, dialogs, keyboard activation, RTL, and a
+phone-size example. Minimum-SDK and device/browser execution were not verified.

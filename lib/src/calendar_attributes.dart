@@ -11,6 +11,7 @@ class GeneralCalendarLabels {
     this.holiday = 'Holiday',
     this.vacation = 'Vacation',
     this.chooseView = 'Choose calendar view',
+    this.today = 'Today',
   });
 
   final String month;
@@ -19,6 +20,7 @@ class GeneralCalendarLabels {
   final String holiday;
   final String vacation;
   final String chooseView;
+  final String today;
 }
 
 /// A label displayed as a colored marker below a day number.

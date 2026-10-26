@@ -1,5 +1,5 @@
 name: general_calendar_example
-description: Delegate-based calendars and application-owned date attributes.
+description: Calendar playground with four chronologies, selection rules, styles, picker dialogs, and an appointment form.
 publish_to: none
 version: 1.0.0
 environment:
@@ -8,10 +8,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.8
   general_calendar:
     path: ..
   general_datetime: ^4.0.0
 dev_dependencies:
+  flutter_test:
+    sdk: flutter
   flutter_lints: ^5.0.0
 flutter:
   uses-material-design: true

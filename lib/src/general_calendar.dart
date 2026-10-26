@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'calendar_attributes.dart';
+import 'calendar_design.dart';
 import 'calendar_selection.dart';
 import 'calendar_theme.dart';
 
@@ -33,6 +34,8 @@ class GeneralCalendar extends StatefulWidget {
     this.dateAttributes,
     this.dayBuilder,
     this.theme,
+    this.design = GeneralCalendarDesign.material,
+    this.visibleMonths,
     this.labels = const GeneralCalendarLabels(),
     this.firstDayOfWeek,
     Set<int> weekendDays = const {DateTime.saturday, DateTime.sunday},
@@ -70,6 +73,9 @@ class GeneralCalendar extends StatefulWidget {
     }
     if (maxSelectedDates != null && maxSelectedDates! < 1) {
       throw ArgumentError.value(maxSelectedDates, 'maxSelectedDates');
+    }
+    if (visibleMonths != null && visibleMonths != 1 && visibleMonths != 2) {
+      throw ArgumentError.value(visibleMonths, 'visibleMonths', 'Use 1 or 2.');
     }
     if ((selectionMode != CalendarSelectionMode.single &&
             initialDate != null) ||
@@ -126,6 +132,12 @@ class GeneralCalendar extends StatefulWidget {
   final CalendarDateAttributesBuilder? dateAttributes;
   final CalendarDayBuilder? dayBuilder;
   final GeneralCalendarThemeData? theme;
+  final GeneralCalendarDesign design;
+
+  /// One or two consecutive month panels. Two panels collapse to one below
+  /// 760 logical pixels and at the last allowed month. Null uses the design's
+  /// preference. Week and year views always use one panel.
+  final int? visibleMonths;
   final GeneralCalendarLabels labels;
 
   /// Dart weekday, Monday=1 through Sunday=7. Null follows the locale.
@@ -376,69 +388,191 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
   @override
   Widget build(BuildContext context) {
     final localizations = MaterialLocalizations.of(context);
-    final theme = widget.theme ?? GeneralCalendarTheme.of(context);
-    return Material(
-      type: MaterialType.transparency,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Semantics(
-                  liveRegion: true,
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 16),
-                    child: Text(
-                      _view == GeneralCalendarView.year
-                          ? _delegate.formatYear(_displayed.year, localizations)
-                          : _delegate.formatMonthYear(
-                              _displayed,
-                              localizations,
-                            ),
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                ),
-              ),
-              if (widget.showViewSwitcher)
-                PopupMenuButton<GeneralCalendarView>(
-                  key: const ValueKey('general-calendar-view'),
-                  tooltip: widget.labels.chooseView,
-                  icon: const Icon(Icons.calendar_view_month),
-                  onSelected: _setView,
-                  itemBuilder: (context) => [
-                    for (final view in GeneralCalendarView.values)
-                      PopupMenuItem(value: view, child: Text(_viewLabel(view))),
-                  ],
-                ),
-              IconButton(
-                key: const ValueKey('general-calendar-previous'),
-                tooltip: localizations.previousPageTooltip,
-                onPressed: _canNavigate(-1, localizations)
-                    ? () => _navigate(-1, localizations)
-                    : null,
-                icon: const Icon(Icons.chevron_left),
-              ),
-              IconButton(
-                key: const ValueKey('general-calendar-next'),
-                tooltip: localizations.nextPageTooltip,
-                onPressed: _canNavigate(1, localizations)
-                    ? () => _navigate(1, localizations)
-                    : null,
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ],
+    final theme = widget.design
+        .resolve(Theme.of(context))
+        .merge(GeneralCalendarTheme.of(context))
+        .merge(widget.theme);
+    final radius = BorderRadius.circular(theme.surfaceRadius ?? 0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        DateTime? secondMonth;
+        final requestedMonths =
+            widget.visibleMonths ?? widget.design.preferredVisibleMonths;
+        if (_view == GeneralCalendarView.month &&
+            requestedMonths == 2 &&
+            constraints.maxWidth >= 760 &&
+            _delegate.monthDelta(_displayed, widget.lastDate) > 0) {
+          secondMonth = _delegate.addMonthsToMonthDate(_displayed, 1);
+        }
+        Widget panel(DateTime anchor) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildWeekdays(localizations, theme),
+                ..._buildDays(context, localizations, theme,
+                    anchor: anchor, multiMonth: secondMonth != null),
+              ],
+            );
+        return Material(
+          key: ValueKey('general-calendar-surface-${widget.design.name}'),
+          color: theme.surfaceColor,
+          elevation: theme.elevation ?? 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: radius,
+            side: theme.showBorder == true
+                ? BorderSide(color: theme.borderColor!)
+                : BorderSide.none,
           ),
-          if (_view == GeneralCalendarView.year)
-            _buildYear(context, localizations)
-          else ...[
-            _buildWeekdays(localizations, theme),
-            ..._buildDays(context, localizations, theme),
-          ],
-        ],
-      ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: theme.contentPadding ?? EdgeInsets.zero,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildHeader(context, localizations, theme, secondMonth),
+                if (theme.showHeaderDivider == true)
+                  Divider(height: 1, color: theme.borderColor),
+                if (_view == GeneralCalendarView.year)
+                  _buildYear(context, localizations, theme)
+                else if (secondMonth != null)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: panel(_displayed)),
+                      const SizedBox(width: 24),
+                      Expanded(child: panel(secondMonth)),
+                    ],
+                  )
+                else
+                  panel(_displayed),
+              ],
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  Widget _buildHeader(BuildContext context, MaterialLocalizations localizations,
+      GeneralCalendarThemeData theme, DateTime? secondMonth) {
+    final layout = theme.headerLayout ?? CalendarHeaderLayout.leading;
+    Widget title(DateTime date, {bool centered = false}) => Semantics(
+          liveRegion: true,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            child: Text(
+              _view == GeneralCalendarView.year
+                  ? _delegate.formatYear(date.year, localizations)
+                  : _delegate.formatMonthYear(date, localizations),
+              textAlign: centered ? TextAlign.center : TextAlign.start,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.headerTextStyle,
+            ),
+          ),
+        );
+    final switcher = widget.showViewSwitcher
+        ? PopupMenuButton<GeneralCalendarView>(
+            key: const ValueKey('general-calendar-view'),
+            tooltip: widget.labels.chooseView,
+            color: theme.surfaceColor,
+            icon: Icon(Icons.calendar_view_month,
+                color: theme.mutedForegroundColor),
+            onSelected: _setView,
+            itemBuilder: (context) => [
+              for (final view in GeneralCalendarView.values)
+                PopupMenuItem(value: view, child: Text(_viewLabel(view))),
+            ],
+          )
+        : const SizedBox.shrink();
+    Widget navigation(int direction) {
+      final outlined =
+          theme.navigationStyle == CalendarNavigationStyle.outlined;
+      final filled = theme.navigationStyle == CalendarNavigationStyle.filled;
+      return IconButton(
+        key: ValueKey(direction < 0
+            ? 'general-calendar-previous'
+            : 'general-calendar-next'),
+        tooltip: direction < 0
+            ? localizations.previousPageTooltip
+            : localizations.nextPageTooltip,
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.circular((theme.dayRadius ?? 4).clamp(0, 12)),
+          )),
+          side: WidgetStatePropertyAll(outlined
+              ? BorderSide(color: theme.borderColor!)
+              : BorderSide.none),
+          foregroundColor: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.disabled)
+                  ? theme.mutedForegroundColor?.withValues(alpha: 0.38)
+                  : widget.design == GeneralCalendarDesign.cupertino
+                      ? theme.todayColor
+                      : theme.foregroundColor),
+          backgroundColor: WidgetStatePropertyAll(
+              filled ? theme.borderColor?.withValues(alpha: 0.3) : null),
+        ),
+        onPressed: _canNavigate(direction, localizations)
+            ? () => _navigate(direction, localizations)
+            : null,
+        icon: Icon(direction < 0 ? Icons.chevron_left : Icons.chevron_right,
+            size: 20),
+      );
+    }
+
+    final previous = navigation(-1);
+    final next = navigation(1);
+    final Widget header;
+    if (secondMonth != null) {
+      header = Row(children: [
+        previous,
+        Expanded(child: title(_displayed, centered: true)),
+        switcher,
+        Expanded(child: title(secondMonth, centered: true)),
+        next
+      ]);
+    } else {
+      header = switch (layout) {
+        CalendarHeaderLayout.leading => Row(children: [
+            Expanded(child: title(_displayed)),
+            switcher,
+            previous,
+            next
+          ]),
+        CalendarHeaderLayout.centered => Row(children: [
+            previous,
+            Expanded(child: title(_displayed, centered: true)),
+            next,
+            switcher
+          ]),
+        CalendarHeaderLayout.split => Row(children: [
+            previous,
+            Expanded(child: title(_displayed, centered: true)),
+            switcher,
+            next
+          ]),
+        CalendarHeaderLayout.stacked =>
+          Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(children: [Expanded(child: title(_displayed)), switcher]),
+            Row(children: [
+              previous,
+              next,
+              const Spacer(),
+              TextButton(
+                onPressed: widget._isWithinBounds(widget.currentDate)
+                    ? () => _setDisplayed(widget.currentDate)
+                    : null,
+                child: Text(widget.labels.today),
+              )
+            ]),
+          ]),
+      };
+    }
+    return ColoredBox(
+        color: theme.headerBackgroundColor ?? Colors.transparent,
+        child:
+            Padding(padding: const EdgeInsets.only(bottom: 4), child: header));
   }
 
   String _viewLabel(GeneralCalendarView view) => switch (view) {
@@ -454,35 +588,39 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
     final first = widget.firstDayOfWeek == null
         ? localizations.firstDayOfWeekIndex
         : widget.firstDayOfWeek! % 7;
-    return Row(
-      children: [
-        for (var i = 0; i < 7; i++)
-          Expanded(
-            child: ExcludeSemantics(
-              child: SizedBox(
-                height: 32,
-                child: Center(
-                  child: Text(
-                    localizations.narrowWeekdays[(first + i) % 7],
-                    style: theme.weekdayTextStyle,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+          border: theme.showGridLines == true
+              ? Border(bottom: BorderSide(color: theme.borderColor!))
+              : null),
+      child: Row(
+        children: [
+          for (var i = 0; i < 7; i++)
+            Expanded(
+              child: ExcludeSemantics(
+                child: SizedBox(
+                  height: 32,
+                  child: Center(
+                    child: Text(
+                      localizations.narrowWeekdays[(first + i) % 7],
+                      style: theme.weekdayTextStyle,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
-  List<Widget> _buildDays(
-    BuildContext context,
-    MaterialLocalizations localizations,
-    GeneralCalendarThemeData theme,
-  ) {
-    final month = _delegate.getMonth(_displayed.year, _displayed.month);
+  List<Widget> _buildDays(BuildContext context,
+      MaterialLocalizations localizations, GeneralCalendarThemeData theme,
+      {required DateTime anchor, bool multiMonth = false}) {
+    final month = _delegate.getMonth(anchor.year, anchor.month);
     final week = _view == GeneralCalendarView.week;
     final offset = week
-        ? _weekOffset(_displayed, localizations)
+        ? _weekOffset(anchor, localizations)
         : widget.firstDayOfWeek == null
             ? _delegate.firstDayOffset(month.year, month.month, localizations)
             : _weekOffset(month, localizations);
@@ -500,19 +638,20 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
                     builder: (context) {
                       final index = row * 7 + column - offset;
                       if (!week &&
-                          !widget.showAdjacentMonthDays &&
+                          (!widget.showAdjacentMonthDays || multiMonth) &&
                           (index < 0 || index >= length)) {
-                        return const SizedBox.shrink();
+                        return _blankDay(theme, column);
                       }
                       final date = week
-                          ? _tryAddDays(_displayed, index)
+                          ? _tryAddDays(anchor, index)
                           : index >= 0 && index < length
                               ? _delegate.getDay(
                                   month.year, month.month, index + 1)
                               : _tryAddDays(month, index);
                       return date == null
-                          ? const SizedBox.shrink()
-                          : _buildDay(context, date, localizations, theme);
+                          ? _blankDay(theme, column)
+                          : _buildDay(context, date, localizations, theme,
+                              month: month, column: column);
                     },
                   ),
                 ),
@@ -522,7 +661,23 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
     ];
   }
 
-  Widget _buildYear(BuildContext context, MaterialLocalizations localizations) {
+  BoxBorder? _gridBorder(GeneralCalendarThemeData theme, int column) =>
+      theme.showGridLines == true
+          ? BorderDirectional(
+              bottom: BorderSide(color: theme.borderColor!),
+              end: column == 6
+                  ? BorderSide.none
+                  : BorderSide(color: theme.borderColor!),
+            )
+          : null;
+
+  Widget _blankDay(GeneralCalendarThemeData theme, int column) => DecoratedBox(
+        decoration: BoxDecoration(border: _gridBorder(theme, column)),
+        child: const SizedBox.expand(),
+      );
+
+  Widget _buildYear(BuildContext context, MaterialLocalizations localizations,
+      GeneralCalendarThemeData theme) {
     final months = <DateTime>[];
     var month = _delegate.getMonth(_displayed.year, 1);
     while (month.year == _displayed.year) {
@@ -548,6 +703,12 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
                   child: row * 3 + column >= months.length
                       ? const SizedBox.shrink()
                       : TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.foregroundColor,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    (theme.dayRadius ?? 4).clamp(0, 16))),
+                          ),
                           onPressed: () {
                             _setDisplayed(_clamp(months[row * 3 + column]));
                             _setView(GeneralCalendarView.month);
@@ -570,12 +731,9 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
     );
   }
 
-  Widget _buildDay(
-    BuildContext context,
-    DateTime date,
-    MaterialLocalizations localizations,
-    GeneralCalendarThemeData theme,
-  ) {
+  Widget _buildDay(BuildContext context, DateTime date,
+      MaterialLocalizations localizations, GeneralCalendarThemeData theme,
+      {required DateTime month, required int column}) {
     final attributes =
         widget.dateAttributes?.call(date) ?? CalendarDateAttributes();
     final disabled = !widget._isWithinBounds(date) ||
@@ -595,30 +753,36 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
       isToday: _delegate.isSameDay(date, widget.currentDate),
       isSelected: selected,
       isDisabled: disabled,
-      isOutsideMonth: !_delegate.isSameMonth(date, _displayed),
+      isOutsideMonth: !_delegate.isSameMonth(date, month),
       isWeekend: widget.weekendDays.contains(date.weekday),
       isRangeStart: start,
       isRangeEnd: end,
       isInRange: inRange,
     );
     final colors = Theme.of(context).colorScheme;
+    final normalForeground = theme.foregroundColor ?? colors.onSurface;
+    final todayIndicator =
+        theme.todayIndicator ?? CalendarTodayIndicator.outline;
     final foreground = disabled
-        ? colors.onSurface.withValues(alpha: 0.38)
+        ? normalForeground.withValues(alpha: 0.38)
         : selected
             ? theme.selectedDayForegroundColor ?? colors.onPrimary
             : attributes.foregroundColor ??
                 (attributes.isHoliday
                     ? theme.holidayColor ?? colors.error
                     : details.isWeekend
-                        ? theme.weekendColor ?? colors.onSurface
-                        : colors.onSurface);
+                        ? theme.weekendColor ?? normalForeground
+                        : details.isOutsideMonth
+                            ? theme.mutedForegroundColor ?? normalForeground
+                            : normalForeground);
     final background = selected
         ? theme.selectedDayColor ?? colors.primary
         : attributes.backgroundColor ??
-            (inRange
-                ? theme.rangeColor ?? colors.primaryContainer
-                : attributes.isVacation
-                    ? theme.vacationColor ?? colors.tertiaryContainer
+            (attributes.isVacation
+                ? theme.vacationColor ?? colors.tertiaryContainer
+                : details.isToday &&
+                        todayIndicator == CalendarTodayIndicator.fill
+                    ? theme.todayColor?.withValues(alpha: 0.12)
                     : null);
     final labels = [
       _delegate.formatFullDate(date, localizations),
@@ -637,52 +801,112 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
       enabled: !disabled && !widget.readOnly,
       onTap: disabled || widget.readOnly ? null : () => _select(date),
       child: ExcludeSemantics(
-        child: Padding(
-          padding: const EdgeInsets.all(2),
-          child: Ink(
+        child: LayoutBuilder(builder: (context, constraints) {
+          final inset = theme.dayInset ?? 2;
+          final radius = BorderRadius.circular(theme.dayRadius ?? 12);
+          final eventLabels = theme.showEventLabels == true;
+          final visualSize = (constraints.maxWidth < constraints.maxHeight
+                  ? constraints.maxWidth
+                  : constraints.maxHeight) -
+              inset * 2;
+          final custom = widget.dayBuilder?.call(context, details);
+          Widget visual = Ink(
             decoration: BoxDecoration(
               color: background,
-              borderRadius: BorderRadius.circular(12),
-              border: details.isToday
+              borderRadius: radius,
+              border: details.isToday &&
+                      todayIndicator == CalendarTodayIndicator.outline
                   ? Border.all(color: theme.todayColor ?? colors.primary)
                   : null,
             ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: disabled || widget.readOnly ? null : () => _select(date),
-              child: Center(
-                child: widget.dayBuilder?.call(context, details) ??
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          localizations.formatDecimal(date.day),
-                          style: (theme.dayTextStyle ??
-                                  Theme.of(context).textTheme.bodyMedium!)
-                              .copyWith(color: foreground),
-                        ),
-                        if (attributes.tags.isNotEmpty)
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              for (final tag in attributes.tags.take(3))
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  margin: const EdgeInsets.all(1),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: tag.color ?? foreground,
-                                  ),
-                                ),
-                            ],
-                          ),
-                      ],
-                    ),
-              ),
+            child: Stack(fit: StackFit.expand, children: [
+              if (custom != null)
+                Center(child: custom)
+              else if (eventLabels)
+                _eventDayContent(
+                    context, details, localizations, theme, foreground)
+              else
+                Center(
+                    child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(localizations.formatDecimal(date.day),
+                                style: (theme.dayTextStyle ??
+                                        Theme.of(context).textTheme.bodyMedium!)
+                                    .copyWith(
+                                        color: foreground,
+                                        fontWeight:
+                                            selected ? FontWeight.w600 : null)),
+                            if (attributes.tags.isNotEmpty)
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                for (final tag in attributes.tags.take(3))
+                                  Container(
+                                      width: 4,
+                                      height: 4,
+                                      margin: const EdgeInsets.all(1),
+                                      decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: tag.color ?? foreground)),
+                              ]),
+                          ],
+                        ))),
+              if (details.isToday &&
+                  !eventLabels &&
+                  (todayIndicator == CalendarTodayIndicator.dot ||
+                      todayIndicator == CalendarTodayIndicator.underline))
+                Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Container(
+                        width: todayIndicator == CalendarTodayIndicator.dot
+                            ? 4
+                            : 16,
+                        height: todayIndicator == CalendarTodayIndicator.dot
+                            ? 4
+                            : 2,
+                        decoration: BoxDecoration(
+                            color: selected ? foreground : theme.todayColor,
+                            borderRadius: BorderRadius.circular(4)),
+                      ),
+                    )),
+            ]),
+          );
+          if (!eventLabels) {
+            visual = Center(
+                child: SizedBox(
+                    width: visualSize.clamp(0, double.infinity),
+                    height: visualSize.clamp(0, double.infinity),
+                    child: visual));
+          }
+          return Ink(
+            decoration: BoxDecoration(
+              color: details.isWeekend ? theme.weekendBackgroundColor : null,
+              border: _gridBorder(theme, column),
             ),
-          ),
-        ),
+            child: Stack(fit: StackFit.expand, children: [
+              if (inRange && !(start && end))
+                PositionedDirectional(
+                  start: start ? constraints.maxWidth / 2 : 0,
+                  end: end ? constraints.maxWidth / 2 : 0,
+                  top: inset,
+                  bottom: inset,
+                  child:
+                      Ink(color: theme.rangeColor ?? colors.primaryContainer),
+                ),
+              visual,
+              Positioned.fill(
+                  child: InkWell(
+                borderRadius: eventLabels ? BorderRadius.zero : radius,
+                hoverColor: theme.hoverColor,
+                focusColor: theme.focusColor,
+                onTap: disabled || widget.readOnly ? null : () => _select(date),
+              )),
+            ]),
+          );
+        }),
       ),
     );
     final tooltip = attributes.tooltip ??
@@ -691,5 +915,75 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
             : attributes.tags.map((tag) => tag.label).join(', '));
     if (tooltip != null) content = Tooltip(message: tooltip, child: content);
     return content;
+  }
+
+  Widget _eventDayContent(
+      BuildContext context,
+      CalendarDayDetails day,
+      MaterialLocalizations localizations,
+      GeneralCalendarThemeData theme,
+      Color foreground) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final textHeight = MediaQuery.textScalerOf(context).scale(11) * 1.3 + 4;
+      final numberHeight = MediaQuery.textScalerOf(context)
+                  .scale(theme.dayTextStyle?.fontSize ?? 14) *
+              (theme.dayTextStyle?.height ?? 1.4) +
+          4;
+      final available = constraints.maxHeight - numberHeight - 12;
+      final count = (available / textHeight).floor().clamp(0, 2);
+      final tags = day.attributes.tags;
+      final todayColor =
+          theme.todayColor ?? Theme.of(context).colorScheme.primary;
+      final todayForeground =
+          ThemeData.estimateBrightnessForColor(todayColor) == Brightness.dark
+              ? Colors.white
+              : Colors.black;
+      return Padding(
+        padding: const EdgeInsets.all(4),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          SizedBox(
+              height: numberHeight.clamp(0, constraints.maxHeight - 12),
+              child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.topEnd,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: day.isToday
+                        ? BoxDecoration(
+                            color: todayColor,
+                            borderRadius: BorderRadius.circular(20))
+                        : null,
+                    child: Text(localizations.formatDecimal(day.date.day),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.dayTextStyle?.copyWith(
+                            color: day.isToday ? todayForeground : foreground)),
+                  ))),
+          const SizedBox(height: 4),
+          for (final tag in tags.take(count))
+            Container(
+              margin: const EdgeInsets.only(bottom: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+              decoration: BoxDecoration(
+                color: (tag.color ?? todayColor).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: Text(tag.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      TextStyle(fontSize: 11, color: foreground, height: 1.3)),
+            ),
+          if (tags.length > count && available > (count + 1) * textHeight)
+            Text('+${localizations.formatDecimal(tags.length - count)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    TextStyle(fontSize: 11, color: theme.mutedForegroundColor)),
+        ]),
+      );
+    });
   }
 }

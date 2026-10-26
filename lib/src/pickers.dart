@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'calendar_attributes.dart';
+import 'calendar_design.dart';
 import 'calendar_selection.dart';
 import 'calendar_theme.dart';
 import 'general_calendar.dart';
@@ -20,6 +21,8 @@ Future<DateTime?> showGeneralDatePicker({
   CalendarDateAttributesBuilder? dateAttributes,
   CalendarDayBuilder? dayBuilder,
   GeneralCalendarThemeData? theme,
+  GeneralCalendarDesign design = GeneralCalendarDesign.material,
+  int? visibleMonths,
   GeneralCalendarLabels labels = const GeneralCalendarLabels(),
   GeneralCalendarView initialView = GeneralCalendarView.month,
   int? firstDayOfWeek,
@@ -33,6 +36,7 @@ Future<DateTime?> showGeneralDatePicker({
   bool useRootNavigator = true,
   RouteSettings? routeSettings,
 }) {
+  theme = GeneralCalendarTheme.of(context).merge(theme);
   GeneralCalendar calendar(ValueChanged<CalendarSelection> onChanged) =>
       GeneralCalendar(
         firstDate: firstDate,
@@ -44,6 +48,8 @@ Future<DateTime?> showGeneralDatePicker({
         dateAttributes: dateAttributes,
         dayBuilder: dayBuilder,
         theme: theme,
+        design: design,
+        visibleMonths: visibleMonths,
         labels: labels,
         initialView: initialView,
         firstDayOfWeek: firstDayOfWeek,
@@ -55,6 +61,7 @@ Future<DateTime?> showGeneralDatePicker({
   return _showPicker<DateTime>(
     context: context,
     initialValue: configuration.initialDate,
+    width: (visibleMonths ?? design.preferredVisibleMonths) == 2 ? 800 : 360,
     calendar: calendar,
     valueOf: (selection) => selection.date,
     helpText: helpText,
@@ -82,6 +89,8 @@ Future<DateTimeRange<DateTime>?> showGeneralDateRangePicker({
   CalendarDateAttributesBuilder? dateAttributes,
   CalendarDayBuilder? dayBuilder,
   GeneralCalendarThemeData? theme,
+  GeneralCalendarDesign design = GeneralCalendarDesign.material,
+  int? visibleMonths,
   GeneralCalendarLabels labels = const GeneralCalendarLabels(),
   GeneralCalendarView initialView = GeneralCalendarView.month,
   int? firstDayOfWeek,
@@ -96,6 +105,7 @@ Future<DateTimeRange<DateTime>?> showGeneralDateRangePicker({
   bool useRootNavigator = true,
   RouteSettings? routeSettings,
 }) {
+  theme = GeneralCalendarTheme.of(context).merge(theme);
   GeneralCalendar calendar(ValueChanged<CalendarSelection> onChanged) =>
       GeneralCalendar(
         firstDate: firstDate,
@@ -108,6 +118,8 @@ Future<DateTimeRange<DateTime>?> showGeneralDateRangePicker({
         dateAttributes: dateAttributes,
         dayBuilder: dayBuilder,
         theme: theme,
+        design: design,
+        visibleMonths: visibleMonths,
         labels: labels,
         initialView: initialView,
         firstDayOfWeek: firstDayOfWeek,
@@ -119,6 +131,7 @@ Future<DateTimeRange<DateTime>?> showGeneralDateRangePicker({
   return _showPicker<DateTimeRange<DateTime>>(
     context: context,
     initialValue: configuration.initialDateRange,
+    width: (visibleMonths ?? design.preferredVisibleMonths) == 2 ? 800 : 360,
     calendar: calendar,
     valueOf: (selection) => selection.range,
     helpText: helpText,
@@ -135,6 +148,7 @@ Future<DateTimeRange<DateTime>?> showGeneralDateRangePicker({
 Future<T?> _showPicker<T>({
   required BuildContext context,
   required T? initialValue,
+  required double width,
   required GeneralCalendar Function(ValueChanged<CalendarSelection>) calendar,
   required T? Function(CalendarSelection) valueOf,
   required String? helpText,
@@ -154,6 +168,7 @@ Future<T?> _showPicker<T>({
       builder: (dialogContext) {
         Widget dialog = _CalendarPickerDialog<T>(
           initialValue: initialValue,
+          width: width,
           calendar: calendar,
           valueOf: valueOf,
           helpText: helpText,
@@ -174,6 +189,7 @@ Future<T?> _showPicker<T>({
 class _CalendarPickerDialog<T> extends StatefulWidget {
   const _CalendarPickerDialog({
     required this.initialValue,
+    required this.width,
     required this.calendar,
     required this.valueOf,
     required this.helpText,
@@ -182,6 +198,7 @@ class _CalendarPickerDialog<T> extends StatefulWidget {
   });
 
   final T? initialValue;
+  final double width;
   final GeneralCalendar Function(ValueChanged<CalendarSelection>) calendar;
   final T? Function(CalendarSelection) valueOf;
   final String? helpText;
@@ -203,7 +220,7 @@ class _CalendarPickerDialogState<T> extends State<_CalendarPickerDialog<T>> {
       title: Text(widget.helpText ?? localizations.datePickerHelpText),
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       content: SizedBox(
-        width: 360,
+        width: widget.width,
         child: SingleChildScrollView(
           child: widget.calendar((selection) {
             setState(() => _value = widget.valueOf(selection));

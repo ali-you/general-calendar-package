@@ -174,7 +174,7 @@ void main() {
       builder: (context, details) => Text('Custom ${details.date.day}'),
       onDateChanged: (_) => changed = true,
     );
-    await tester.tap(find.text('Custom 8'));
+    await tester.tap(day(8));
     expect(changed, isFalse);
   });
 
@@ -464,7 +464,14 @@ void main() {
   testWidgets('changing delegates resets selection with new date types', (
     tester,
   ) async {
-    await pumpCalendar(tester, initialDate: DateTime(2024, 3, 20));
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: GeneralCalendar(
+      firstDate: DateTime(2024, 3),
+      lastDate: DateTime(2024, 4),
+      initialDate: DateTime(2024, 3, 20),
+    ))));
+    final originalState = tester.state(find.byType(GeneralCalendar));
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -479,6 +486,7 @@ void main() {
       ),
     );
     expect(day(2, year: 1403, month: 1), findsOneWidget);
+    expect(tester.state(find.byType(GeneralCalendar)), same(originalState));
     expect(tester.takeException(), isNull);
   });
 
