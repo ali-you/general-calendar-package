@@ -1,6 +1,6 @@
 name: general_calendar
 description: "Delegate-driven Flutter calendars, time inputs, and date-time picker dialogs."
-version: 0.0.1
+version: 1.0.0
 homepage: https://github.com/ali-you
 repository: https://github.com/ali-you/general-calendar-package
 documentation: https://github.com/ali-you/general-calendar-package

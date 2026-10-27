@@ -4,7 +4,24 @@ Flutter calendar widgets and date-picker dialogs using Flutter's own
 `CalendarDelegate<DateTime>` interface. Gregorian works out of the box; pass a
 matching delegate and dates for Persian, Hijri, Hebrew, or your own calendar.
 
-## Implemented
+## Installation
+
+Add the package to your Flutter application's `pubspec.yaml`:
+
+```yaml
+dependencies:
+  general_calendar: ^1.0.0
+```
+
+Run `flutter pub get`, then import
+`package:general_calendar/general_calendar.dart`.
+For Persian, Hijri, or Hebrew calendars, use matching calendar delegates and
+date types as shown below. The four-calendar example targets
+`general_datetime` 4.0.0, which is not yet available on pub.dev; use the local
+checkout overrides in the development section until that release is published.
+The Gregorian calendar needs no additional package.
+
+## Features
 
 - Inline month and week grids, plus a year overview that opens a chosen month.
 - Ten design-system-inspired presets, plus booking-range and event-grid layouts.
@@ -27,7 +44,7 @@ Choose a visual style with `design: GeneralCalendarDesign.shadcn` (or `material`
 `polaris`, `booking`, `eventGrid`). All use the same delegates and date rules.
 See the [design catalog, sources, screenshots, and customization guide](docs/calendar-designs.md).
 The example includes a style selector, dark mode, and a comparison gallery.
-See the [time and date-time picker guide](docs/time-pickers.md) for the new APIs,
+See the [time and date-time picker guide](docs/time-pickers.md) for the APIs,
 availability rules, calendar-safe results, and screenshots.
 
 ## Inline calendar
@@ -244,7 +261,10 @@ dependency_overrides:
 
 In `example/pubspec_overrides.yaml`, use `../../general_date` and
 `../../general_date/packages/general_datetime_core` instead. These local
-chronology versions are prepared in source; hosted resolution is not certified.
+chronology versions are prepared in source. `general_datetime` 4.0.0 is not yet
+available on pub.dev, so developing this repository and running its example
+requires these overrides until that dependency is published. Applications using
+the package's Gregorian widgets depend only on Flutter.
 
 ```sh
 flutter pub get
@@ -262,8 +282,8 @@ It includes a web runner: run `flutter pub get` and `flutter run -d chrome` from
 `example`. See its README for native runner setup, local dependency overrides,
 and a guided walkthrough.
 
-Local verification: package tests (86), example tests (16), analysis, formatting,
-and the example release web build passed.
+Release verification uses Flutter 3.47.6 / Dart 3.13.5 with local chronology
+overrides: package tests (86), example tests (16), analysis, and formatting passed.
 The tests cover calendar switching, Hebrew leap months, finite Hijri bounds,
 disabled-date rules, range selection, dialogs, keyboard activation, RTL, and a
 phone-size example. Minimum-SDK and device/browser execution were not verified.

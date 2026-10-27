@@ -40,8 +40,9 @@ dependency_overrides:
     path: ../../general_date/packages/general_datetime_core
 ```
 
-Local sibling dependencies are the verified development setup. Hosted chronology
-resolution has not been verified. For another target, generate its runner with
+Local sibling dependencies are required until `general_datetime` 4.0.0 is
+published to pub.dev. The example uses that release's Hebrew calendar APIs.
+For another target, generate its runner with
 `flutter create --platforms=windows .` (substitute your target), then run
 `flutter run -d windows`.
 

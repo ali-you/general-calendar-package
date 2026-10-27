@@ -1,4 +1,8 @@
-## 0.0.1
+## 1.0.0
+
+* First stable release of the delegate-driven calendar and picker APIs.
+* Document installation, calendar integration, selection policies, visual presets,
+  time validation, and the runnable example.
 
 * Add inline time-only and combined date-time pickers plus confirmation dialogs.
 * Add numeric, dial, wheel, dropdown, and appointment-slot time input with
