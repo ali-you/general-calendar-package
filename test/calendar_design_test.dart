@@ -136,7 +136,7 @@ void main() {
         host(calendar(GeneralCalendarDesign.material, dayBuilder: builder)));
     final state = tester.state(find.byType(GeneralCalendar));
     await tester.tap(find.byKey(const ValueKey('general-calendar-next')));
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(day(4, month: 4));
     await tester.pump();
     for (final design in GeneralCalendarDesign.values) {

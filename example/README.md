@@ -26,7 +26,7 @@ The Android app is named **General Calendar** and uses application ID
 the local debug signing key for device testing.
 
 The example imports `general_calendar` from `..` and uses `general_datetime` for
-Persian, Hijri, and Hebrew arithmetic and English calendar labels. It also bundles
+Persian, Hijri, Hebrew, and Chinese arithmetic and English calendar labels. It also bundles
 the `cupertino_icons` font for Flutter's Cupertino controls. When developing
 against the neighboring `general_date` checkout, create this ignored file before
 running `flutter pub get`:
@@ -40,8 +40,8 @@ dependency_overrides:
     path: ../../general_date/packages/general_datetime_core
 ```
 
-Local sibling dependencies are required until `general_datetime` 4.0.0 is
-published to pub.dev. The example uses that release's Hebrew calendar APIs.
+Local sibling dependencies are optional; `general_datetime` 5.0.0 provides the
+Hebrew and Chinese calendar APIs used by this example.
 For another target, generate its runner with
 `flutter create --platforms=windows .` (substitute your target), then run
 `flutter run -d windows`.
@@ -50,7 +50,7 @@ For another target, generate its runner with
 
 | Area | What it demonstrates |
 | --- | --- |
-| Calendar system | Gregorian, Persian, Hijri, Hebrew; explicit date conversion and one matching localization delegate |
+| Calendar system | Gregorian, Persian, Hijri, Hebrew, Chinese; explicit date conversion and one matching localization delegate |
 | Selection | Single date, toggled multiple dates with a configurable limit, and inclusive ranges with pending end dates |
 | Style | All 12 presets, a comparison gallery, dark mode, inherited theme and widget overrides |
 | Calendar options | Starting month/week/year view, locale or explicit week start, Friday or Saturday/Sunday weekends, adjacent dates, two responsive month panels |

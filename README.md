@@ -2,7 +2,7 @@
 
 Flutter calendar widgets and date-picker dialogs using Flutter's own
 `CalendarDelegate<DateTime>` interface. Gregorian works out of the box; pass a
-matching delegate and dates for Persian, Hijri, Hebrew, or your own calendar.
+matching delegate and dates for Persian, Hijri, Hebrew, Chinese, or your own calendar.
 
 ## Installation
 
@@ -10,20 +10,25 @@ Add the package to your Flutter application's `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  general_calendar: ^1.0.0
+  general_calendar: ^1.1.0
 ```
 
 Run `flutter pub get`, then import
 `package:general_calendar/general_calendar.dart`.
-For Persian, Hijri, or Hebrew calendars, use matching calendar delegates and
-date types as shown below. The four-calendar example targets
-`general_datetime` 4.0.0, which is not yet available on pub.dev; use the local
-checkout overrides in the development section until that release is published.
+For Persian, Hijri, Hebrew, or Chinese calendars, use matching calendar delegates and
+date types as shown below. The five-calendar example uses
+`general_datetime` 5.0.0 for Persian, Hijri, Hebrew, and Chinese chronology.
 The Gregorian calendar needs no additional package.
+
+Chinese calendars use `ChineseCalendarDelegate` and `ChineseDateTime` from
+`general_datetime`, paired with `DefaultChineseCalendarMaterialLocalizations.delegate`
+(or the translated companion formatter delegate). The example includes Chinese
+calendar selection. Month navigation includes the repeated leap month.
 
 ## Features
 
 - Inline month and week grids, plus a year overview that opens a chosen month.
+- Animated month paging with horizontal touch, trackpad, and mouse dragging.
 - Ten design-system-inspired presets, plus booking-range and event-grid layouts.
 - Single-date, multiple-date, and inclusive date-range selection.
 - Single-date and range dialogs with confirmation and cancellation.
@@ -84,6 +89,18 @@ Change the widget key to reset these values. Replacing the delegate or selection
 mode also resets state. Changing bounds or rules removes stale selections
 without firing user-interaction callbacks. Supply valid initial values on every
 construction, including after rule changes.
+
+Month view supports horizontal paging in the locale's text direction, including
+two-month layouts. Header arrows animate the same viewport, and the calendar
+height follows the visible months' row counts. Paging respects date bounds and
+preserves the selection; `onDisplayedMonthChanged` reports month changes from
+both gestures and header controls.
+
+Set `enableSwipeNavigation: false` to keep navigation on the header controls.
+Use `animationDuration: const Duration(milliseconds: 350)` to change the default
+250 ms transition, or `Duration.zero` for immediate header navigation. Platform
+reduced-motion settings automatically disable header animations. Week and year
+views retain their existing header navigation.
 
 ## Calendars and localization
 
@@ -247,8 +264,8 @@ booking rules in selection policy rather than making holidays inherently blocked
 
 ## Local development and verification
 
-This checkout tests against the neighboring chronology repository. The local
-`pubspec_overrides.yaml` files are ignored; create them as follows if absent:
+To develop and test against the neighboring chronology repository, create these
+ignored `pubspec_overrides.yaml` files:
 
 ```yaml
 # Repository root: pubspec_overrides.yaml
@@ -260,10 +277,8 @@ dependency_overrides:
 ```
 
 In `example/pubspec_overrides.yaml`, use `../../general_date` and
-`../../general_date/packages/general_datetime_core` instead. These local
-chronology versions are prepared in source. `general_datetime` 4.0.0 is not yet
-available on pub.dev, so developing this repository and running its example
-requires these overrides until that dependency is published. Applications using
+`../../general_date/packages/general_datetime_core` instead. These overrides are
+optional for development against the local chronology checkout. Applications using
 the package's Gregorian widgets depend only on Flutter.
 
 ```sh
@@ -275,15 +290,15 @@ cd example
 flutter test
 ```
 
-The [comprehensive example](example/README.md) includes four calendars, all
+The [comprehensive example](example/README.md) includes five calendars, all
 selection modes and views, configurable date rules, custom day cells, all style
 presets, four picker dialogs, five time inputs, and an inline appointment form.
 It includes a web runner: run `flutter pub get` and `flutter run -d chrome` from
 `example`. See its README for native runner setup, local dependency overrides,
 and a guided walkthrough.
 
-Release verification uses Flutter 3.47.6 / Dart 3.13.5 with local chronology
-overrides: package tests (86), example tests (16), analysis, and formatting passed.
+Verification uses Flutter 3.47.6 / Dart 3.13.5: package tests (115),
+example tests (16), analysis, and formatting passed.
 The tests cover calendar switching, Hebrew leap months, finite Hijri bounds,
 disabled-date rules, range selection, dialogs, keyboard activation, RTL, and a
 phone-size example. Minimum-SDK and device/browser execution were not verified.

@@ -1,9 +1,160 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'calendar_attributes.dart';
 import 'calendar_design.dart';
 import 'calendar_selection.dart';
 import 'calendar_theme.dart';
+
+/// Keeps the intrinsic calendar height while a horizontal viewport pages
+/// between months with different row counts.
+class _MonthPager extends StatefulWidget {
+  const _MonthPager({
+    super.key,
+    required this.page,
+    required this.pageCount,
+    required this.enableSwipeNavigation,
+    required this.duration,
+    required this.onPageChanged,
+    required this.heightForPage,
+    required this.builder,
+  });
+
+  final int page;
+  final int pageCount;
+  final bool enableSwipeNavigation;
+  final Duration duration;
+  final ValueChanged<int> onPageChanged;
+  final double Function(int) heightForPage;
+  final Widget Function(int) builder;
+
+  @override
+  State<_MonthPager> createState() => _MonthPagerState();
+}
+
+class _MonthPagerState extends State<_MonthPager> {
+  late final PageController _controller;
+  int _navigation = 0;
+  int? _targetPage;
+  late int _reportedPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController(initialPage: widget.page, keepPage: false);
+    _reportedPage = widget.page;
+  }
+
+  @override
+  void didUpdateWidget(_MonthPager oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.page == oldWidget.page &&
+        !(widget.duration == Duration.zero && _targetPage != null)) {
+      return;
+    }
+    // A drag already moved the controller before notifying the parent.
+    if (_targetPage == null && _reportedPage == widget.page) return;
+    _scrollToPage();
+  }
+
+  Future<void> _scrollToPage() async {
+    final navigation = ++_navigation;
+    _targetPage = widget.page;
+    if (widget.duration == Duration.zero) {
+      _controller.jumpToPage(widget.page);
+    } else {
+      await _controller.animateToPage(
+        widget.page,
+        duration: widget.duration,
+        curve: Curves.easeOutCubic,
+      );
+    }
+    if (mounted && navigation == _navigation) _targetPage = null;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scrollBehavior = ScrollConfiguration.of(context);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final page = (_controller.hasClients
+                ? _controller.page ?? widget.page.toDouble()
+                : widget.page.toDouble())
+            .clamp(0.0, (widget.pageCount - 1).toDouble());
+        final start = page.floor();
+        final end = page.ceil();
+        final startHeight = widget.heightForPage(start);
+        final endHeight = widget.heightForPage(end);
+        return SizedBox(
+          height: startHeight + (endHeight - startHeight) * (page - start),
+          child: child,
+        );
+      },
+      child: ScrollConfiguration(
+        behavior: scrollBehavior.copyWith(
+          dragDevices: {...scrollBehavior.dragDevices, PointerDeviceKind.mouse},
+        ),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.depth != 0) return false;
+            if (notification is ScrollStartNotification &&
+                notification.dragDetails != null) {
+              ++_navigation;
+              _targetPage = null;
+            }
+            if (notification is ScrollEndNotification && _targetPage == null) {
+              final page = _controller.page!.round();
+              if (page != widget.page) widget.onPageChanged(page);
+            }
+            return false;
+          },
+          child: PageView.builder(
+            key: const ValueKey('general-calendar-month-pager'),
+            controller: _controller,
+            physics: widget.enableSwipeNavigation
+                ? const PageScrollPhysics()
+                : const NeverScrollableScrollPhysics(),
+            itemCount: widget.pageCount,
+            onPageChanged: (index) {
+              _reportedPage = index;
+              if (_targetPage == null && index != widget.page) {
+                widget.onPageChanged(index);
+              }
+            },
+            itemBuilder: (context, index) => IgnorePointer(
+              ignoring: index != widget.page,
+              child: ExcludeSemantics(
+                excluding: index != widget.page,
+                child: ExcludeFocus(
+                  excluding: index != widget.page,
+                  child: OverflowBox(
+                    alignment: Alignment.topCenter,
+                    minHeight: widget.heightForPage(index),
+                    maxHeight: widget.heightForPage(index),
+                    // Let ensureVisible reveal a day vertically while the outer
+                    // pager aligns the entire month, rather than the day's cell.
+                    child: SingleChildScrollView(
+                      primary: false,
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: widget.builder(index),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// A Material calendar using Flutter's own arithmetic/localization delegates.
 ///
@@ -36,6 +187,8 @@ class GeneralCalendar extends StatefulWidget {
     this.theme,
     this.design = GeneralCalendarDesign.material,
     this.visibleMonths,
+    this.enableSwipeNavigation = true,
+    this.animationDuration = const Duration(milliseconds: 250),
     this.labels = const GeneralCalendarLabels(),
     this.firstDayOfWeek,
     Set<int> weekendDays = const {DateTime.saturday, DateTime.sunday},
@@ -76,6 +229,9 @@ class GeneralCalendar extends StatefulWidget {
     }
     if (visibleMonths != null && visibleMonths != 1 && visibleMonths != 2) {
       throw ArgumentError.value(visibleMonths, 'visibleMonths', 'Use 1 or 2.');
+    }
+    if (animationDuration.isNegative) {
+      throw ArgumentError.value(animationDuration, 'animationDuration');
     }
     if ((selectionMode != CalendarSelectionMode.single &&
             initialDate != null) ||
@@ -138,6 +294,15 @@ class GeneralCalendar extends StatefulWidget {
   /// 760 logical pixels and at the last allowed month. Null uses the design's
   /// preference. Week and year views always use one panel.
   final int? visibleMonths;
+
+  /// Enables horizontal touch, trackpad, and mouse dragging between months.
+  /// Navigation follows the ambient text direction and respects date bounds.
+  final bool enableSwipeNavigation;
+
+  /// Duration of month navigation triggered by the header controls.
+  /// Set to [Duration.zero] for immediate navigation. The platform's reduced
+  /// motion setting also disables these animations.
+  final Duration animationDuration;
   final GeneralCalendarLabels labels;
 
   /// Dart weekday, Monday=1 through Sunday=7. Null follows the locale.
@@ -395,23 +560,51 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
     final radius = BorderRadius.circular(theme.surfaceRadius ?? 0);
     return LayoutBuilder(
       builder: (context, constraints) {
-        DateTime? secondMonth;
         final requestedMonths =
             widget.visibleMonths ?? widget.design.preferredVisibleMonths;
-        if (_view == GeneralCalendarView.month &&
-            requestedMonths == 2 &&
-            constraints.maxWidth >= 760 &&
-            _delegate.monthDelta(_displayed, widget.lastDate) > 0) {
-          secondMonth = _delegate.addMonthsToMonthDate(_displayed, 1);
-        }
-        Widget panel(DateTime anchor) => Column(
+        DateTime? secondMonthFor(DateTime anchor) =>
+            _view == GeneralCalendarView.month &&
+                    requestedMonths == 2 &&
+                    constraints.maxWidth >= 760 &&
+                    _delegate.monthDelta(anchor, widget.lastDate) > 0
+                ? _delegate.addMonthsToMonthDate(anchor, 1)
+                : null;
+        final secondMonth = secondMonthFor(_displayed);
+        Widget panel(DateTime anchor, {bool multiMonth = false}) => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 _buildWeekdays(localizations, theme),
                 ..._buildDays(context, localizations, theme,
-                    anchor: anchor, multiMonth: secondMonth != null),
+                    anchor: anchor, multiMonth: multiMonth),
               ],
             );
+        Widget monthPanels(DateTime anchor) {
+          final second = secondMonthFor(anchor);
+          if (second == null) return panel(anchor);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: panel(anchor, multiMonth: true)),
+              const SizedBox(width: 24),
+              Expanded(child: panel(second, multiMonth: true)),
+            ],
+          );
+        }
+
+        DateTime monthAt(int index) =>
+            _delegate.addMonthsToMonthDate(widget.firstDate, index);
+        double monthHeight(DateTime anchor) {
+          final month = _delegate.getMonth(anchor.year, anchor.month);
+          final offset = widget.firstDayOfWeek == null
+              ? _delegate.firstDayOffset(month.year, month.month, localizations)
+              : _weekOffset(month, localizations);
+          final rows = (offset +
+                  _delegate.getDaysInMonth(month.year, month.month) +
+                  6) ~/
+              7;
+          return 32 + rows * theme.dayHeight;
+        }
+
         return Material(
           key: ValueKey('general-calendar-surface-${widget.design.name}'),
           color: theme.surfaceColor,
@@ -433,14 +626,32 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
                   Divider(height: 1, color: theme.borderColor),
                 if (_view == GeneralCalendarView.year)
                   _buildYear(context, localizations, theme)
-                else if (secondMonth != null)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: panel(_displayed)),
-                      const SizedBox(width: 24),
-                      Expanded(child: panel(secondMonth)),
-                    ],
+                else if (_view == GeneralCalendarView.month)
+                  _MonthPager(
+                    key: ValueKey((
+                      _delegate,
+                      widget.firstDate,
+                      widget.lastDate,
+                    )),
+                    page: _delegate.monthDelta(widget.firstDate, _displayed),
+                    pageCount: _delegate.monthDelta(
+                            widget.firstDate, widget.lastDate) +
+                        1,
+                    enableSwipeNavigation: widget.enableSwipeNavigation,
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : widget.animationDuration,
+                    onPageChanged: (index) =>
+                        _setDisplayed(_clamp(monthAt(index))),
+                    heightForPage: (index) {
+                      final month = monthAt(index);
+                      final second = secondMonthFor(month);
+                      final height = monthHeight(month);
+                      if (second == null) return height;
+                      final secondHeight = monthHeight(second);
+                      return height > secondHeight ? height : secondHeight;
+                    },
+                    builder: (index) => monthPanels(monthAt(index)),
                   )
                 else
                   panel(_displayed),
@@ -525,12 +736,23 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
     final next = navigation(1);
     final Widget header;
     if (secondMonth != null) {
-      header = Row(children: [
-        previous,
-        Expanded(child: title(_displayed, centered: true)),
-        switcher,
-        Expanded(child: title(secondMonth, centered: true)),
-        next
+      // Match the panel widths and gutter below. Controls overlay the reserved
+      // title padding so their widths cannot shift either month heading.
+      header = Stack(alignment: Alignment.center, children: [
+        Row(children: [
+          for (final date in [_displayed, secondMonth]) ...[
+            if (date == secondMonth) const SizedBox(width: 24),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48),
+                child: title(date, centered: true),
+              ),
+            ),
+          ],
+        ]),
+        Align(alignment: AlignmentDirectional.centerStart, child: previous),
+        Align(alignment: AlignmentDirectional.centerEnd, child: next),
+        if (widget.showViewSwitcher) switcher,
       ]);
     } else {
       header = switch (layout) {
@@ -930,8 +1152,13 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
               (theme.dayTextStyle?.height ?? 1.4) +
           4;
       final available = constraints.maxHeight - numberHeight - 12;
-      final count = (available / textHeight).floor().clamp(0, 2);
       final tags = day.attributes.tags;
+      final capacity = (available / textHeight).floor().clamp(0, 3);
+      // Reserve a line for the hidden count instead of silently dropping tags
+      // when the cell can fit labels but cannot fit every event.
+      final count = tags.length <= capacity && tags.length <= 2
+          ? tags.length
+          : (capacity - 1).clamp(0, 2);
       final todayColor =
           theme.todayColor ?? Theme.of(context).colorScheme.primary;
       final todayForeground =
@@ -976,12 +1203,11 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
                   style:
                       TextStyle(fontSize: 11, color: foreground, height: 1.3)),
             ),
-          if (tags.length > count && available > (count + 1) * textHeight)
+          if (tags.length > count && capacity > count)
             Text('+${localizations.formatDecimal(tags.length - count)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    TextStyle(fontSize: 11, color: theme.mutedForegroundColor)),
+                style: TextStyle(fontSize: 11, color: foreground, height: 1.3)),
         ]),
       );
     });

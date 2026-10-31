@@ -249,7 +249,7 @@ void main() {
     await tester.tap(day(7));
     expect(changes, 0);
     await tester.tap(find.byKey(const ValueKey('general-calendar-next')));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('April 2024'), findsOneWidget);
   });
 
@@ -309,7 +309,7 @@ void main() {
       greaterThan(tester.getCenter(day(4)).dx),
     );
     await tester.tap(find.byKey(const ValueKey('general-calendar-next')));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(day(1, month: 4), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -400,7 +400,7 @@ void main() {
       ),
     );
     await tester.tap(find.byKey(const ValueKey('general-calendar-next')));
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(day(1, year: 1403, month: 1));
     expect(selected, isA<PersianDateTime>());
     expect(selected!.year, 1403);

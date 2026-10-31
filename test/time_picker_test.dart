@@ -568,7 +568,8 @@ void main() {
     expect(selected, DateTime(2024, 3, 21, 15, 30));
   });
 
-  testWidgets('combined picker emits Persian, Hijri and Hebrew date types',
+  testWidgets(
+      'combined picker emits Persian, Hijri, Hebrew and Chinese date types',
       (tester) async {
     final cases = <(
       DateTime,
@@ -589,6 +590,11 @@ void main() {
         HebrewDateTime(5784, 7, 10, 14, 30),
         const HebrewCalendarDelegate(),
         DefaultHebrewCalendarMaterialLocalizations.delegate
+      ),
+      (
+        ChineseDateTime(2025, 7, 10, 14, 30),
+        const ChineseCalendarDelegate(),
+        DefaultChineseCalendarMaterialLocalizations.delegate
       ),
     ];
     for (final (date, delegate, localization) in cases) {

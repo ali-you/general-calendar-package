@@ -6,13 +6,14 @@ import 'package:general_datetime/delegates.dart';
 
 void main() {
   testWidgets(
-      'switches all four calendar delegates with matching localizations',
+      'switches all five calendar delegates with matching localizations',
       (tester) async {
     await tester.pumpWidget(CalendarExample(now: () => DateTime(2024, 3, 20)));
     final delegates = <String, Type>{
       'persian': PersianCalendarDelegate,
       'hijri': HijriCalendarDelegate,
       'hebrew': HebrewCalendarDelegate,
+      'chinese': ChineseCalendarDelegate,
       'gregorian': GregorianCalendarDelegate,
     };
     for (final entry in delegates.entries) {
@@ -34,7 +35,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(CalendarExample(now: () => DateTime(2024, 3, 20)));
     await tester.tap(find.byKey(const ValueKey('general-calendar-next')));
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.ensureVisible(
         find.byKey(const ValueKey('general-calendar-day-2024-4-1')));
     await tester

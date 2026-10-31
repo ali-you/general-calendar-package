@@ -37,11 +37,12 @@ Future<DateTime?> showGeneralDatePicker({
   RouteSettings? routeSettings,
 }) {
   theme = GeneralCalendarTheme.of(context).merge(theme);
-  GeneralCalendar calendar(ValueChanged<CalendarSelection> onChanged) =>
+  GeneralCalendar calendar(ValueChanged<CalendarSelection> onChanged,
+          {DateTime? seed}) =>
       GeneralCalendar(
         firstDate: firstDate,
         lastDate: lastDate,
-        initialDate: initialDate,
+        initialDate: seed,
         currentDate: currentDate,
         calendarDelegate: calendarDelegate,
         selectableDayPredicate: selectableDayPredicate,
@@ -57,12 +58,17 @@ Future<DateTime?> showGeneralDatePicker({
         onSelectionChanged: onChanged,
       );
   // Validate before pushing a route, as Flutter's Material pickers do.
-  final configuration = calendar((_) {});
+  final configuration = calendar((_) {}, seed: initialDate);
   return _showPicker<DateTime>(
     context: context,
     initialValue: configuration.initialDate,
     width: (visibleMonths ?? design.preferredVisibleMonths) == 2 ? 800 : 360,
-    calendar: calendar,
+    calendar: (onChanged) => calendar(onChanged,
+        seed: configuration.initialDate != null &&
+                configuration.isDateSelectable(configuration.initialDate!)
+            ? configuration.initialDate
+            : null),
+    isSelectable: configuration.isDateSelectable,
     valueOf: (selection) => selection.date,
     helpText: helpText,
     cancelText: cancelText,
@@ -106,11 +112,12 @@ Future<DateTimeRange<DateTime>?> showGeneralDateRangePicker({
   RouteSettings? routeSettings,
 }) {
   theme = GeneralCalendarTheme.of(context).merge(theme);
-  GeneralCalendar calendar(ValueChanged<CalendarSelection> onChanged) =>
+  GeneralCalendar calendar(ValueChanged<CalendarSelection> onChanged,
+          {DateTimeRange<DateTime>? seed}) =>
       GeneralCalendar(
         firstDate: firstDate,
         lastDate: lastDate,
-        initialDateRange: initialDateRange,
+        initialDateRange: seed,
         currentDate: currentDate,
         calendarDelegate: calendarDelegate,
         selectionMode: CalendarSelectionMode.range,
@@ -127,12 +134,17 @@ Future<DateTimeRange<DateTime>?> showGeneralDateRangePicker({
         allowDisabledDatesInRange: allowDisabledDatesInRange,
         onSelectionChanged: onChanged,
       );
-  final configuration = calendar((_) {});
+  final configuration = calendar((_) {}, seed: initialDateRange);
   return _showPicker<DateTimeRange<DateTime>>(
     context: context,
     initialValue: configuration.initialDateRange,
     width: (visibleMonths ?? design.preferredVisibleMonths) == 2 ? 800 : 360,
-    calendar: calendar,
+    calendar: (onChanged) => calendar(onChanged,
+        seed: configuration.initialDateRange != null &&
+                configuration.isRangeSelectable(configuration.initialDateRange!)
+            ? configuration.initialDateRange
+            : null),
+    isSelectable: configuration.isRangeSelectable,
     valueOf: (selection) => selection.range,
     helpText: helpText,
     cancelText: cancelText,
@@ -148,6 +160,7 @@ Future<DateTimeRange<DateTime>?> showGeneralDateRangePicker({
 Future<T?> _showPicker<T>({
   required BuildContext context,
   required T? initialValue,
+  required bool Function(T) isSelectable,
   required double width,
   required GeneralCalendar Function(ValueChanged<CalendarSelection>) calendar,
   required T? Function(CalendarSelection) valueOf,
@@ -168,6 +181,7 @@ Future<T?> _showPicker<T>({
       builder: (dialogContext) {
         Widget dialog = _CalendarPickerDialog<T>(
           initialValue: initialValue,
+          isSelectable: isSelectable,
           width: width,
           calendar: calendar,
           valueOf: valueOf,
@@ -189,6 +203,7 @@ Future<T?> _showPicker<T>({
 class _CalendarPickerDialog<T> extends StatefulWidget {
   const _CalendarPickerDialog({
     required this.initialValue,
+    required this.isSelectable,
     required this.width,
     required this.calendar,
     required this.valueOf,
@@ -198,6 +213,7 @@ class _CalendarPickerDialog<T> extends StatefulWidget {
   });
 
   final T? initialValue;
+  final bool Function(T) isSelectable;
   final double width;
   final GeneralCalendar Function(ValueChanged<CalendarSelection>) calendar;
   final T? Function(CalendarSelection) valueOf;
@@ -233,9 +249,16 @@ class _CalendarPickerDialogState<T> extends State<_CalendarPickerDialog<T>> {
           child: Text(widget.cancelText ?? localizations.cancelButtonLabel),
         ),
         TextButton(
-          onPressed: _value == null
+          onPressed: _value == null || !widget.isSelectable(_value as T)
               ? null
-              : () => Navigator.of(context).pop<T>(_value),
+              : () {
+                  final value = _value as T;
+                  if (widget.isSelectable(value)) {
+                    Navigator.of(context).pop<T>(value);
+                  } else {
+                    setState(() => _value = null);
+                  }
+                },
           child: Text(widget.confirmText ?? localizations.okButtonLabel),
         ),
       ],

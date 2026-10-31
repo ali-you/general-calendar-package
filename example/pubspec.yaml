@@ -1,5 +1,5 @@
 name: general_calendar_example
-description: Calendar playground with four chronologies, selection rules, styles, picker dialogs, and an appointment form.
+description: Calendar playground with five chronologies, selection rules, styles, picker dialogs, and an appointment form.
 publish_to: none
 version: 1.0.0
 environment:
@@ -11,7 +11,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   general_calendar:
     path: ..
-  general_datetime: ^4.0.0
+  general_datetime: ^5.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

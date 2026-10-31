@@ -1,3 +1,19 @@
+## 1.1.0
+
+* Align two-month headings with their grids, retain hidden-event counts in
+  compact cells, and revalidate date/range availability before confirmation.
+
+* Add animated horizontal month paging for touch, trackpad, and mouse dragging,
+  with RTL navigation, adaptive heights, two-month layouts, date bounds, and
+  reduced-motion support. Expose swipe and transition-duration options.
+
+* Verify Chinese leap-month booking ranges in LTR/RTL, disabled range interiors,
+  keyboard semantics, wall-time combination, and combined picker output.
+* Add Chinese calendar example selection and integration coverage for leap-month
+  navigation, year views, date selection and finite endpoints.
+* Use `general_datetime ^5.0.0` in development and the example for the published
+  Chinese chronology APIs.
+
 ## 1.0.0
 
 * First stable release of the delegate-driven calendar and picker APIs.

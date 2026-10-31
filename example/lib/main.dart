@@ -11,7 +11,7 @@ import 'design_gallery.dart';
 
 void main() => runApp(const CalendarExample());
 
-enum _Calendar { gregorian, persian, hijri, hebrew }
+enum _Calendar { gregorian, persian, hijri, hebrew, chinese }
 
 class CalendarExample extends StatefulWidget {
   const CalendarExample({super.key, this.now});
@@ -56,6 +56,7 @@ class _CalendarExampleState extends State<CalendarExample> {
         _Calendar.gregorian => const GregorianCalendarDelegate(),
         _Calendar.persian => const PersianCalendarDelegate(),
         _Calendar.hijri => const HijriCalendarDelegate(),
+        _Calendar.chinese => const ChineseCalendarDelegate(),
         _Calendar.hebrew => const HebrewCalendarDelegate(),
       };
 
@@ -65,6 +66,7 @@ class _CalendarExampleState extends State<CalendarExample> {
         _Calendar.gregorian => _instant,
         _Calendar.persian => PersianDateTime.fromDateTime(_instant),
         _Calendar.hijri => HijriDateTime.fromDateTime(_instant),
+        _Calendar.chinese => ChineseDateTime.fromDateTime(_instant),
         _Calendar.hebrew => HebrewDateTime.fromDateTime(_instant),
       });
 
@@ -230,6 +232,8 @@ class _CalendarExampleState extends State<CalendarExample> {
           DefaultPersianCalendarMaterialLocalizations.delegate,
         if (_calendar == _Calendar.hijri)
           DefaultHijriCalendarMaterialLocalizations.delegate,
+        if (_calendar == _Calendar.chinese)
+          DefaultChineseCalendarMaterialLocalizations.delegate,
         if (_calendar == _Calendar.hebrew)
           DefaultHebrewCalendarMaterialLocalizations.delegate,
       ],
