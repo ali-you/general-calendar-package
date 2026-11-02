@@ -232,6 +232,9 @@ class _CalendarPickerDialogState<T> extends State<_CalendarPickerDialog<T>> {
   @override
   Widget build(BuildContext context) {
     final localizations = MaterialLocalizations.of(context);
+    // Keep confirmation in sync with the calendar, which drops invalidated
+    // selections. Restoring availability must not resurrect a cleared value.
+    if (_value != null && !widget.isSelectable(_value as T)) _value = null;
     return AlertDialog(
       title: Text(widget.helpText ?? localizations.datePickerHelpText),
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -249,7 +252,7 @@ class _CalendarPickerDialogState<T> extends State<_CalendarPickerDialog<T>> {
           child: Text(widget.cancelText ?? localizations.cancelButtonLabel),
         ),
         TextButton(
-          onPressed: _value == null || !widget.isSelectable(_value as T)
+          onPressed: _value == null
               ? null
               : () {
                   final value = _value as T;

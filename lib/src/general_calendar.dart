@@ -6,6 +6,41 @@ import 'calendar_design.dart';
 import 'calendar_selection.dart';
 import 'calendar_theme.dart';
 
+/// Paint joined translucent cells without separately antialiasing their shared
+/// edges, which would leave lighter seams at fractional cell widths.
+class _RangeBandDecoration extends Decoration {
+  const _RangeBandDecoration(this.color);
+
+  final Color color;
+
+  @override
+  BoxPainter createBoxPainter([VoidCallback? onChanged]) =>
+      _RangeBandPainter(color);
+
+  @override
+  bool operator ==(Object other) =>
+      other is _RangeBandDecoration && other.color == color;
+
+  @override
+  int get hashCode => color.hashCode;
+}
+
+class _RangeBandPainter extends BoxPainter {
+  _RangeBandPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
+    canvas.drawRect(
+      offset & configuration.size!,
+      Paint()
+        ..color = color
+        ..isAntiAlias = false,
+    );
+  }
+}
+
 /// Keeps the intrinsic calendar height while a horizontal viewport pages
 /// between months with different row counts.
 class _MonthPager extends StatefulWidget {
@@ -999,13 +1034,15 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
                             : normalForeground);
     final background = selected
         ? theme.selectedDayColor ?? colors.primary
-        : attributes.backgroundColor ??
-            (attributes.isVacation
-                ? theme.vacationColor ?? colors.tertiaryContainer
-                : details.isToday &&
-                        todayIndicator == CalendarTodayIndicator.fill
-                    ? theme.todayColor?.withValues(alpha: 0.12)
-                    : null);
+        : inRange
+            ? null
+            : attributes.backgroundColor ??
+                (attributes.isVacation
+                    ? theme.vacationColor ?? colors.tertiaryContainer
+                    : details.isToday &&
+                            todayIndicator == CalendarTodayIndicator.fill
+                        ? theme.todayColor?.withValues(alpha: 0.12)
+                        : null);
     final labels = [
       _delegate.formatFullDate(date, localizations),
       if (attributes.semanticLabel != null) attributes.semanticLabel!,
@@ -1027,10 +1064,13 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
           final inset = theme.dayInset ?? 2;
           final radius = BorderRadius.circular(theme.dayRadius ?? 12);
           final eventLabels = theme.showEventLabels == true;
-          final visualSize = (constraints.maxWidth < constraints.maxHeight
-                  ? constraints.maxWidth
-                  : constraints.maxHeight) -
-              inset * 2;
+          final visualSize = ((constraints.maxWidth < constraints.maxHeight
+                      ? constraints.maxWidth
+                      : constraints.maxHeight) -
+                  inset * 2)
+              .clamp(0.0, double.infinity);
+          final rangeInset =
+              eventLabels ? 0.0 : (constraints.maxHeight - visualSize) / 2;
           final custom = widget.dayBuilder?.call(context, details);
           Widget visual = Ink(
             decoration: BoxDecoration(
@@ -1099,9 +1139,7 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
           if (!eventLabels) {
             visual = Center(
                 child: SizedBox(
-                    width: visualSize.clamp(0, double.infinity),
-                    height: visualSize.clamp(0, double.infinity),
-                    child: visual));
+                    width: visualSize, height: visualSize, child: visual));
           }
           return Ink(
             decoration: BoxDecoration(
@@ -1109,15 +1147,20 @@ class _GeneralCalendarState extends State<GeneralCalendar> {
               border: _gridBorder(theme, column),
             ),
             child: Stack(fit: StackFit.expand, children: [
-              if (inRange && !(start && end))
-                PositionedDirectional(
-                  start: start ? constraints.maxWidth / 2 : 0,
-                  end: end ? constraints.maxWidth / 2 : 0,
-                  top: inset,
-                  bottom: inset,
-                  child:
-                      Ink(color: theme.rangeColor ?? colors.primaryContainer),
+              // Keep this ink feature mounted before the day decoration. A
+              // feature inserted when the second endpoint is tapped would paint
+              // after existing endpoint fills, covering half of each marker.
+              PositionedDirectional(
+                start: start ? constraints.maxWidth / 2 : 0,
+                end: end ? constraints.maxWidth / 2 : 0,
+                top: rangeInset,
+                bottom: rangeInset,
+                child: Ink(
+                  decoration: _RangeBandDecoration(inRange && !(start && end)
+                      ? theme.rangeColor ?? colors.primaryContainer
+                      : Colors.transparent),
                 ),
+              ),
               visual,
               Positioned.fill(
                   child: InkWell(

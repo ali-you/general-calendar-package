@@ -1,3 +1,11 @@
+## Unreleased
+
+* Keep range bands behind endpoint markers after interactive selection, align
+  their height with the markers on narrow/tall grids, and preserve continuous
+  range fills over descriptive date backgrounds.
+* Remove seams between translucent range cells at fractional widths, and keep
+  invalidated dialog selections cleared when date availability returns.
+
 ## 1.1.0
 
 * Align two-month headings with their grids, retain hidden-event counts in

@@ -57,6 +57,9 @@ class CalendarDateAttributes {
   final bool isVacation;
   final String? tooltip;
   final String? semanticLabel;
+
+  /// Day background when outside the selection. Selection and range fills take
+  /// priority so a completed range remains visually connected.
   final Color? backgroundColor;
   final Color? foregroundColor;
   final List<CalendarTag> tags;
