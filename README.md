@@ -47,9 +47,9 @@ The chronology package is a development dependency for integration tests.
 Choose a visual style with `design: GeneralCalendarDesign.shadcn` (or `material`,
 `cupertino`, `fluent`, `carbon`, `antDesign`, `atlassian`, `spectrum`, `primer`,
 `polaris`, `booking`, `eventGrid`). All use the same delegates and date rules.
-See the [design catalog, sources, screenshots, and customization guide](docs/calendar-designs.md).
+See the [design catalog, sources, screenshots, and customization guide](https://github.com/ali-you/general-calendar-package/blob/main/docs/calendar-designs.md).
 The example includes a style selector, dark mode, and a comparison gallery.
-See the [time and date-time picker guide](docs/time-pickers.md) for the APIs,
+See the [time and date-time picker guide](https://github.com/ali-you/general-calendar-package/blob/main/docs/time-pickers.md) for the APIs,
 availability rules, calendar-safe results, and screenshots.
 
 ## Inline calendar
@@ -121,7 +121,7 @@ GeneralCalendar(
 
 Install matching Material localizations in `MaterialApp.localizationsDelegates`
 or a `Localizations.override` scope. The chronology package provides
-`DefaultPersianCalendarMaterialLocalizations.delegate` (and Hebrew/Hijri
+`DefaultPersianCalendarMaterialLocalizations.delegate` (and Hebrew/Hijri/Chinese
 variants) through `general_datetime/default_localizations.dart` for English
 calendar labels. For multilingual labels use the matching adapters from
 `general_date_format`. An arithmetic delegate does not install translations.
@@ -302,3 +302,7 @@ example tests (16), analysis, and formatting passed.
 The tests cover calendar switching, Hebrew leap months, finite Hijri bounds,
 disabled-date rules, range selection, dialogs, keyboard activation, RTL, and a
 phone-size example. Minimum-SDK and device/browser execution were not verified.
+
+Chinese localized names and input require general_date_format 4.1.0 with
+ChineseCalendarMaterialLocalizations.delegate. The chronology package also
+provides English labels through DefaultChineseCalendarMaterialLocalizations.
