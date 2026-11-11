@@ -10,7 +10,7 @@ Add the package to your Flutter application's `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  general_calendar: ^1.1.0
+  general_calendar: ^1.1.1
 ```
 
 Run `flutter pub get`, then import
