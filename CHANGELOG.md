@@ -6,6 +6,11 @@
 * Remove seams between translucent range cells at fractional widths, and keep
   invalidated dialog selections cleared when date availability returns.
 
+## 1.1.1 — 2026-11-11
+
+- Complete Chinese release documentation, archive preparation and validation.
+- Verify calendar boundaries, leap-month identity and supported SDK behavior.
+
 ## 1.1.0
 
 * Align two-month headings with their grids, retain hidden-event counts in
