@@ -16,7 +16,7 @@ Add the package to your Flutter application's `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  general_calendar: ^1.1.2
+  general_calendar: ^1.1.3
 ```
 
 Run `flutter pub get`, then import
@@ -115,7 +115,7 @@ views retain their existing header navigation.
 | Calendar date types, arithmetic delegates, and built-in English localizations | [`general_datetime`](https://pub.dev/packages/general_datetime#flutter-material-pickers) |
 | Translated Material date labels, input parsing, and native digits | [`general_date_format`](https://pub.dev/packages/general_date_format#flutter-material-integration) |
 
-For example, add `general_datetime: ^5.1.0` to use a Persian calendar.
+For example, add `general_datetime: ^5.1.1` to use a Persian calendar.
 
 ```dart
 import 'package:general_datetime/general_datetime.dart';

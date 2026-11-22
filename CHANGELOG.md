@@ -1,3 +1,7 @@
+## 1.1.3
+
+- Refresh installation examples for the Amanta patch release from `main`.
+
 ## 1.1.2
 
 * Keep range bands behind endpoint markers after interactive selection, align
