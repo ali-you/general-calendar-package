@@ -1,8 +1,14 @@
 # General Calendar
 
-Flutter calendar widgets and date-picker dialogs using Flutter's own
-`CalendarDelegate<DateTime>` interface. Gregorian works out of the box; pass a
-matching delegate and dates for Persian, Hijri, Hebrew, Chinese, or your own calendar.
+![General Calendar banner](https://raw.githubusercontent.com/ali-you/general-calendar-package/v1.1.2/images/general_calendar-banner.png)
+
+Add inline calendars and pickers for dates, date ranges, times, and combined
+date and time in Flutter. Gregorian is built in. The
+`CalendarDelegate<DateTime>` interface lets you supply Persian (Jalali),
+Hebrew, Chinese, Amanta, Umm al-Qura (Hijri), or your own calendar.
+
+[API reference](https://pub.dev/documentation/general_calendar/latest/) ·
+[Changelog](https://pub.dev/packages/general_calendar/changelog)
 
 ## Installation
 
@@ -10,20 +16,14 @@ Add the package to your Flutter application's `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  general_calendar: ^1.1.1
+  general_calendar: ^1.1.2
 ```
 
 Run `flutter pub get`, then import
-`package:general_calendar/general_calendar.dart`.
-For Persian, Hijri, Hebrew, or Chinese calendars, use matching calendar delegates and
-date types as shown below. The five-calendar example uses
-`general_datetime` 5.0.0 for Persian, Hijri, Hebrew, and Chinese chronology.
-The Gregorian calendar needs no additional package.
-
-Chinese calendars use `ChineseCalendarDelegate` and `ChineseDateTime` from
-`general_datetime`, paired with `DefaultChineseCalendarMaterialLocalizations.delegate`
-(or the translated companion formatter delegate). The example includes Chinese
-calendar selection. Month navigation includes the repeated leap month.
+`package:general_calendar/general_calendar.dart`. Gregorian works with this
+setup. Add [`general_datetime`](https://pub.dev/packages/general_datetime) for the companion
+calendar date types and delegates, or follow the
+[calendar setup](#calendars-and-localization) to supply a custom delegate.
 
 ## Features
 
@@ -44,13 +44,19 @@ calendar selection. Month navigation includes the repeated leap month.
 Requires Flutter 3.32+ and Dart 3.4+. The runtime depends only on Flutter.
 The chronology package is a development dependency for integration tests.
 
-Choose a visual style with `design: GeneralCalendarDesign.shadcn` (or `material`,
-`cupertino`, `fluent`, `carbon`, `antDesign`, `atlassian`, `spectrum`, `primer`,
-`polaris`, `booking`, `eventGrid`). All use the same delegates and date rules.
-See the [design catalog, sources, screenshots, and customization guide](https://github.com/ali-you/general-calendar-package/blob/main/docs/calendar-designs.md).
-The example includes a style selector, dark mode, and a comparison gallery.
 See the [time and date-time picker guide](https://github.com/ali-you/general-calendar-package/blob/main/docs/time-pickers.md) for the APIs,
 availability rules, calendar-safe results, and screenshots.
+
+## Calendar designs
+
+Choose from 12 designs with `GeneralCalendarDesign`. Each uses the same calendar
+delegates and selection rules. For example, set
+`design: GeneralCalendarDesign.shadcn`.
+
+![Light-mode previews of all 12 General Calendar designs](https://raw.githubusercontent.com/ali-you/general-calendar-package/v1.1.2/docs/images/calendar-designs-light.png)
+
+The example app includes a style selector, dark mode, and a comparison gallery.
+[See dark-mode previews and customization options](https://github.com/ali-you/general-calendar-package/blob/main/docs/calendar-designs.md).
 
 ## Inline calendar
 
@@ -104,6 +110,13 @@ views retain their existing header navigation.
 
 ## Calendars and localization
 
+| What you need | Package |
+| --- | --- |
+| Calendar date types, arithmetic delegates, and built-in English localizations | [`general_datetime`](https://pub.dev/packages/general_datetime#flutter-material-pickers) |
+| Translated Material date labels, input parsing, and native digits | [`general_date_format`](https://pub.dev/packages/general_date_format#flutter-material-integration) |
+
+For example, add `general_datetime: ^5.1.0` to use a Persian calendar.
+
 ```dart
 import 'package:general_datetime/general_datetime.dart';
 import 'package:general_datetime/delegates.dart';
@@ -123,14 +136,19 @@ Install matching Material localizations in `MaterialApp.localizationsDelegates`
 or a `Localizations.override` scope. The chronology package provides
 `DefaultPersianCalendarMaterialLocalizations.delegate` (and Hebrew/Hijri/Chinese
 variants) through `general_datetime/default_localizations.dart` for English
-calendar labels. For multilingual labels use the matching adapters from
-`general_date_format`. An arithmetic delegate does not install translations.
-Do not put competing calendar localizations in the same scope.
+calendar labels. Install one calendar-specific Material localization per
+scope to keep the labels and input parsing aligned with the date types.
+
+Use `AmantaCalendarDelegate` with `AmantaDateTime` for Amanta dates. The
+delegate supplies calendar labels and handles leap months. For traditional
+English or Hindi labels in custom UI, use `AmantaDateFormat` with the
+date-time's `civilDate`. See the [Amanta calendar guide](https://github.com/ali-you/general-date-package/blob/v5.1.0/docs/amanta-calendar.md)
+for picker behavior and supported dates.
 
 When switching calendars, convert all date inputs explicitly and install the
-new matching localization scope. Use the regular arithmetic delegate, rather
-than the chronology package's Flutter range-picker adapter: this package does
-not probe unsupported range cells.
+matching localization scope. Pass the regular arithmetic delegate to this
+package's date and range pickers. The chronology package's range-picker
+adapter is for Flutter's built-in `showDateRangePicker`.
 
 `GeneralCalendarLabels` translates the package-specific view menu and attribute
 labels. Flutter supplies date names, numerals, navigation tooltips, and dialog
@@ -290,7 +308,7 @@ cd example
 flutter test
 ```
 
-The [comprehensive example](example/README.md) includes five calendars, all
+The [example app](https://github.com/ali-you/general-calendar-package/blob/main/example/README.md) includes six calendars, all
 selection modes and views, configurable date rules, custom day cells, all style
 presets, four picker dialogs, five time inputs, and an inline appointment form.
 It includes a web runner: run `flutter pub get` and `flutter run -d chrome` from
@@ -302,7 +320,3 @@ example tests (16), analysis, and formatting passed.
 The tests cover calendar switching, Hebrew leap months, finite Hijri bounds,
 disabled-date rules, range selection, dialogs, keyboard activation, RTL, and a
 phone-size example. Minimum-SDK and device/browser execution were not verified.
-
-Chinese localized names and input require general_date_format 4.1.0 with
-ChineseCalendarMaterialLocalizations.delegate. The chronology package also
-provides English labels through DefaultChineseCalendarMaterialLocalizations.
