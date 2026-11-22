@@ -1,10 +1,12 @@
-## Unreleased
+## 1.1.2
 
 * Keep range bands behind endpoint markers after interactive selection, align
   their height with the markers on narrow/tall grids, and preserve continuous
   range fills over descriptive date backgrounds.
 * Remove seams between translucent range cells at fractional widths, and keep
   invalidated dialog selections cleared when date availability returns.
+
+* Demonstrate Amanta in the calendar playground and cover leap-month and range selection with the Amanta delegate.
 
 ## 1.1.1 — 2026-11-11
 

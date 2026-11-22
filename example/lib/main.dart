@@ -11,7 +11,7 @@ import 'design_gallery.dart';
 
 void main() => runApp(const CalendarExample());
 
-enum _Calendar { gregorian, persian, hijri, hebrew, chinese }
+enum _Calendar { gregorian, persian, hijri, hebrew, chinese, amanta }
 
 class CalendarExample extends StatefulWidget {
   const CalendarExample({super.key, this.now});
@@ -57,6 +57,7 @@ class _CalendarExampleState extends State<CalendarExample> {
         _Calendar.persian => const PersianCalendarDelegate(),
         _Calendar.hijri => const HijriCalendarDelegate(),
         _Calendar.chinese => const ChineseCalendarDelegate(),
+        _Calendar.amanta => const AmantaCalendarDelegate(),
         _Calendar.hebrew => const HebrewCalendarDelegate(),
       };
 
@@ -67,6 +68,7 @@ class _CalendarExampleState extends State<CalendarExample> {
         _Calendar.persian => PersianDateTime.fromDateTime(_instant),
         _Calendar.hijri => HijriDateTime.fromDateTime(_instant),
         _Calendar.chinese => ChineseDateTime.fromDateTime(_instant),
+        _Calendar.amanta => AmantaDateTime.fromDateTime(_instant),
         _Calendar.hebrew => HebrewDateTime.fromDateTime(_instant),
       });
 
@@ -212,11 +214,18 @@ class _CalendarExampleState extends State<CalendarExample> {
   Widget build(BuildContext context) {
     final delegate = _delegate;
     final today = _today;
-    final first = delegate.getMonth(today.year - 1, 1);
-    final last = delegate.addDaysToDate(
-      delegate.getMonth(today.year + 2, 1),
-      -1,
-    );
+    final first =
+        today is AmantaDateTime && today.year == AmantaDate.minimumYear
+            ? delegate.getMonth(today.year, 1)
+            : delegate.getMonth(today.year - 1, 1);
+    final last =
+        today is AmantaDateTime && today.year + 2 > AmantaDate.maximumYear
+            ? AmantaDateTime.fromCivilDate(
+                AmantaDate.fromDayIndex(AmantaDate.maximumDayIndex))
+            : delegate.addDaysToDate(
+                delegate.getMonth(today.year + 2, 1),
+                -1,
+              );
     return MaterialApp(
       title: 'General Calendar',
       theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),

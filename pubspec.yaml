@@ -1,10 +1,21 @@
 name: general_calendar
-description: "Delegate-driven Flutter calendars, time inputs, and date-time picker dialogs."
-version: 1.1.1
+description: "Customizable Flutter calendars and pickers for dates, date ranges, times, and combined date and time, with support for custom calendar delegates."
+version: 1.1.2
 homepage: https://github.com/ali-you
 repository: https://github.com/ali-you/general-calendar-package
 documentation: https://github.com/ali-you/general-calendar-package
 issue_tracker: https://github.com/ali-you/general-calendar-package/issues
+
+topics:
+  - calendar
+  - calendar-widget
+  - date-picker
+  - date-range-picker
+  - time-picker
+
+screenshots:
+  - description: "General Calendar logo"
+    path: images/general_calendar.png
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -15,7 +26,7 @@ dependencies:
     sdk: flutter
 
 dev_dependencies:
-  general_datetime: ^5.0.1
+  general_datetime: ^5.1.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
