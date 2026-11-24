@@ -11,7 +11,7 @@ import 'design_gallery.dart';
 
 void main() => runApp(const CalendarExample());
 
-enum _Calendar { gregorian, persian, hijri, hebrew, chinese, amanta }
+enum _Calendar { gregorian, persian, hijri, hebrew, chinese, amanta, saka }
 
 class CalendarExample extends StatefulWidget {
   const CalendarExample({super.key, this.now});
@@ -59,6 +59,7 @@ class _CalendarExampleState extends State<CalendarExample> {
         _Calendar.chinese => const ChineseCalendarDelegate(),
         _Calendar.amanta => const AmantaCalendarDelegate(),
         _Calendar.hebrew => const HebrewCalendarDelegate(),
+        _Calendar.saka => const SakaCalendarDelegate(),
       };
 
   // Convert the instant explicitly before passing any dates to a new delegate.
@@ -70,6 +71,7 @@ class _CalendarExampleState extends State<CalendarExample> {
         _Calendar.chinese => ChineseDateTime.fromDateTime(_instant),
         _Calendar.amanta => AmantaDateTime.fromDateTime(_instant),
         _Calendar.hebrew => HebrewDateTime.fromDateTime(_instant),
+        _Calendar.saka => SakaDateTime.fromDateTime(_instant),
       });
 
   CalendarDateAttributes _attributes(DateTime date) =>
@@ -214,18 +216,20 @@ class _CalendarExampleState extends State<CalendarExample> {
   Widget build(BuildContext context) {
     final delegate = _delegate;
     final today = _today;
-    final first =
-        today is AmantaDateTime && today.year == AmantaDate.minimumYear
-            ? delegate.getMonth(today.year, 1)
-            : delegate.getMonth(today.year - 1, 1);
-    final last =
-        today is AmantaDateTime && today.year + 2 > AmantaDate.maximumYear
-            ? AmantaDateTime.fromCivilDate(
-                AmantaDate.fromDayIndex(AmantaDate.maximumDayIndex))
-            : delegate.addDaysToDate(
-                delegate.getMonth(today.year + 2, 1),
-                -1,
-              );
+    final firstYear = switch (today) {
+      AmantaDateTime() when today.year == AmantaDate.minimumYear => today.year,
+      SakaDateTime(year: SakaDateTime.minimumYear) => today.year,
+      _ => today.year - 1,
+    };
+    final first = delegate.getMonth(firstYear, 1);
+    final last = switch (today) {
+      AmantaDateTime() when today.year + 2 > AmantaDate.maximumYear =>
+        AmantaDateTime.fromCivilDate(
+            AmantaDate.fromDayIndex(AmantaDate.maximumDayIndex)),
+      SakaDateTime() when today.year + 2 > SakaDateTime.maximumYear =>
+        delegate.getDay(SakaDateTime.maximumYear, 12, 30),
+      _ => delegate.addDaysToDate(delegate.getMonth(today.year + 2, 1), -1),
+    };
     return MaterialApp(
       title: 'General Calendar',
       theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
@@ -245,6 +249,8 @@ class _CalendarExampleState extends State<CalendarExample> {
           DefaultChineseCalendarMaterialLocalizations.delegate,
         if (_calendar == _Calendar.hebrew)
           DefaultHebrewCalendarMaterialLocalizations.delegate,
+        if (_calendar == _Calendar.saka)
+          DefaultSakaCalendarMaterialLocalizations.delegate,
       ],
       builder: (context, child) => Directionality(
         textDirection: _rtl ? TextDirection.rtl : TextDirection.ltr,
