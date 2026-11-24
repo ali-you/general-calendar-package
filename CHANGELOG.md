@@ -1,3 +1,9 @@
+## 1.1.4
+
+- Add Saka to the calendar playground and verify range selection across the
+  transition from Phalguna to Chaitra.
+- Require `general_datetime ^6.0.0` for development tests and the playground.
+
 ## 1.1.3
 
 - Refresh installation examples for the Amanta patch release from `main`.

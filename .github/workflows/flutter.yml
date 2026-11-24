@@ -1,0 +1,46 @@
+name: Calendar widget CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        flutter: ['3.32.0', '']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ali-you/general-datetime-package
+          ref: dc13161c9c03a3539efa2d11b9d6d12cdfdbcd4b
+          path: .dart_tool/calendar_dependencies/general_date
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ matrix.flutter }}
+      - name: Resolve against the pinned Saka chronology
+        run: |
+          chronology="$GITHUB_WORKSPACE/.dart_tool/calendar_dependencies/general_date"
+          cat > pubspec_overrides.yaml <<YAML
+          dependency_overrides:
+            general_datetime:
+              path: '$chronology'
+            general_datetime_core:
+              path: '$chronology/packages/general_datetime_core'
+          YAML
+          cp pubspec_overrides.yaml example/pubspec_overrides.yaml
+          flutter pub get
+          (cd example && flutter pub get)
+      - run: flutter analyze ${{ matrix.flutter == '' && '--no-fatal-infos' || '' }}
+      - run: flutter test --no-pub
+      - run: flutter test --no-pub
+        working-directory: example

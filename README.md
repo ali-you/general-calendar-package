@@ -5,7 +5,8 @@
 Add inline calendars and pickers for dates, date ranges, times, and combined
 date and time in Flutter. Gregorian is built in. The
 `CalendarDelegate<DateTime>` interface lets you supply Persian (Jalali),
-Hebrew, Chinese, Amanta, Umm al-Qura (Hijri), or your own calendar.
+Hebrew, Chinese, Amanta, the Indian National Calendar (Saka), Umm al-Qura
+(Hijri), or your own calendar.
 
 [API reference](https://pub.dev/documentation/general_calendar/latest/) ·
 [Changelog](https://pub.dev/packages/general_calendar/changelog)
@@ -144,6 +145,11 @@ delegate supplies calendar labels and handles leap months. For traditional
 English or Hindi labels in custom UI, use `AmantaDateFormat` with the
 date-time's `civilDate`. See the [Amanta calendar guide](https://github.com/ali-you/general-date-package/blob/v5.1.0/docs/amanta-calendar.md)
 for picker behavior and supported dates.
+
+Use `SakaCalendarDelegate` with `SakaDateTime` for Indian National Calendar
+dates. Pair it with `DefaultSakaCalendarMaterialLocalizations.delegate` for
+English labels or `SakaCalendarMaterialLocalizations.delegate` from the
+companion formatter for English and Hindi.
 
 When switching calendars, convert all date inputs explicitly and install the
 matching localization scope. Pass the regular arithmetic delegate to this
@@ -296,7 +302,8 @@ dependency_overrides:
 
 In `example/pubspec_overrides.yaml`, use `../../general_date` and
 `../../general_date/packages/general_datetime_core` instead. These overrides are
-optional for development against the local chronology checkout. Applications using
+needed to test Saka from source before `general_datetime` 6.0.0 is published.
+CI uses the same overrides with a pinned chronology commit. Applications using
 the package's Gregorian widgets depend only on Flutter.
 
 ```sh
@@ -308,7 +315,7 @@ cd example
 flutter test
 ```
 
-The [example app](https://github.com/ali-you/general-calendar-package/blob/main/example/README.md) includes six calendars, all
+The [example app](https://github.com/ali-you/general-calendar-package/blob/main/example/README.md) includes seven calendars, all
 selection modes and views, configurable date rules, custom day cells, all style
 presets, four picker dialogs, five time inputs, and an inline appointment form.
 It includes a web runner: run `flutter pub get` and `flutter run -d chrome` from
