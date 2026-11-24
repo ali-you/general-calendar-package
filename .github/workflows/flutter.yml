@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ali-you/general-datetime-package
-          ref: dc13161c9c03a3539efa2d11b9d6d12cdfdbcd4b
+          ref: bc394dd48c297b4c9a128b8fe9f93b30e403abc6
           path: .dart_tool/calendar_dependencies/general_date
       - uses: subosito/flutter-action@v2
         with:

@@ -1,3 +1,8 @@
+## 2.0.0
+
+- Use chronology 7.0.0 in development tests and the Saka playground.
+- Handle legacy Material and Cupertino import deprecations while retaining Flutter 3.32 support.
+
 ## 1.1.4
 
 - Add Saka to the calendar playground and verify range selection across the

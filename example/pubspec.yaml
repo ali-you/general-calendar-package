@@ -11,7 +11,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   general_calendar:
     path: ..
-  general_datetime: ^6.0.0
+  general_datetime: ^7.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,3 +1,5 @@
+// Flutter 3.32 uses the SDK design libraries.
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 
 enum CalendarHeaderLayout { leading, centered, split, stacked }
